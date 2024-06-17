@@ -240,12 +240,8 @@ defmodule Forecastr.Renderer.ASCII do
     #{white(output_type)}  .-.
     #{white(output_type)} (   ).
     #{white(output_type)}(___(__)
-    #{blue(output_type)} ʻ#{reset(output_type)}#{light_white(output_type)} *#{reset(output_type)} ʻ #{
-      light_white(output_type)
-    }*
-    #{light_white(output_type)}*#{reset(output_type)}#{blue(output_type)} ʻ#{reset(output_type)} *#{
-      blue(output_type)
-    } ʻ
+    #{blue(output_type)} ʻ#{reset(output_type)}#{light_white(output_type)} *#{reset(output_type)} ʻ #{light_white(output_type)}*
+    #{light_white(output_type)}*#{reset(output_type)}#{blue(output_type)} ʻ#{reset(output_type)} *#{blue(output_type)} ʻ
     """
   end
 
@@ -254,12 +250,8 @@ defmodule Forecastr.Renderer.ASCII do
     #{yellow(output_type)}_`/\"\"#{white(output_type)}.-.
     #{yellow(output_type)} ,\\_#{white(output_type)}\(   ).
     #{yellow(output_type)}  /#{reset(output_type)}#{white(output_type)}(___(__)
-    #{blue(output_type)}   ʻ#{reset(output_type)}#{white(output_type)} *#{blue(output_type)} ʻ#{
-      reset(output_type)
-    }#{white(output_type)} *
-    #{white(output_type)}  *#{reset(output_type)}#{blue(output_type)} ʻ#{reset(output_type)}#{
-      white(output_type)
-    } *#{reset(output_type)}#{blue(output_type)} ʻ
+    #{blue(output_type)}   ʻ#{reset(output_type)}#{white(output_type)} *#{blue(output_type)} ʻ#{reset(output_type)}#{white(output_type)} *
+    #{white(output_type)}  *#{reset(output_type)}#{blue(output_type)} ʻ#{reset(output_type)}#{white(output_type)} *#{reset(output_type)}#{blue(output_type)} ʻ
     """
   end
 
@@ -307,14 +299,8 @@ defmodule Forecastr.Renderer.ASCII do
     #{white(output_type)}    .-.
     #{white(output_type)}   (   ).
     #{white(output_type)}  (___(__)
-    #{blue(output_type)}‚ʻ#{reset(output_type)}#{bright_yellow(output_type)}⚡#{reset(output_type)}#{
-      blue(output_type)
-    }ʻ‚#{reset(output_type)}#{bright_yellow(output_type)}⚡#{reset(output_type)}#{
-      blue(output_type)
-    }‚ʻ
-    #{blue(output_type)}‚ʻ‚ʻ#{reset(output_type)}#{bright_yellow(output_type)}⚡#{
-      reset(output_type)
-    }#{blue(output_type)}ʻ‚ʻ
+    #{blue(output_type)}‚ʻ#{reset(output_type)}#{bright_yellow(output_type)}⚡#{reset(output_type)}#{blue(output_type)}ʻ‚#{reset(output_type)}#{bright_yellow(output_type)}⚡#{reset(output_type)}#{blue(output_type)}‚ʻ
+    #{blue(output_type)}‚ʻ‚ʻ#{reset(output_type)}#{bright_yellow(output_type)}⚡#{reset(output_type)}#{blue(output_type)}ʻ‚ʻ
     """
   end
 
@@ -323,9 +309,7 @@ defmodule Forecastr.Renderer.ASCII do
     #{yellow(output_type)}_`/\"\"#{reset(output_type)}#{white(output_type)}.-.
     #{yellow(output_type)} ,\\#{reset(output_type)}#{white(output_type)}_(   ).
     #{yellow(output_type)} /#{reset(output_type)}#{white(output_type)}(___(__)
-    #{bright_yellow(output_type)}  ⚡#{reset(output_type)}#{blue(output_type)}ʻ ʻ#{
-      reset(output_type)
-    }#{bright_yellow(output_type)}⚡ʻ
+    #{bright_yellow(output_type)}  ⚡#{reset(output_type)}#{blue(output_type)}ʻ ʻ#{reset(output_type)}#{bright_yellow(output_type)}⚡ʻ
     #{blue(output_type)} ʻ ʻ ʻ ʻ
     """
   end
@@ -335,9 +319,7 @@ defmodule Forecastr.Renderer.ASCII do
     #{yellow(output_type)}_`/\"\"#{reset(output_type)}.-.
     #{yellow(output_type)} ,\\#{reset(output_type)}_(   ).
     #{yellow(output_type)} /#{reset(output_type)}(___(__)
-    #{light_white(output_type)}   *#{reset(output_type)}#{bright_yellow(output_type)}⚡#{
-      reset(output_type)
-    }#{light_white(output_type)} *#{reset(output_type)}#{bright_yellow(output_type)}⚡
+    #{light_white(output_type)}   *#{reset(output_type)}#{bright_yellow(output_type)}⚡#{reset(output_type)}#{light_white(output_type)} *#{reset(output_type)}#{bright_yellow(output_type)}⚡
     #{light_white(output_type)}   *  *  *
     """
   end
