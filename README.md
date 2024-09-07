@@ -1,10 +1,11 @@
 # Forecastr ![Build Status](https://secure.travis-ci.org/kpanic/forecastr.png?branch=master "Build Status") ![Package Version](https://img.shields.io/hexpm/v/forecastr.svg "Package Version") ![License](https://img.shields.io/hexpm/l/forecastr.svg "License")
 
 
-Forecastr is an open source Weather API wrapper for OpenWeatherMap and DarkSky API.
+Forecastr is an open source Weather API wrapper for OpenWeatherMap and PirateWeather API.
 
 Forecastr is an Elixir flavour of http://wttr.in that talks directly to one of
 the aforementioned weather services.
+
 Aim of the project is to provide a website similar to wttr.in written entirely in elixir
 
 **Project status: beta**
