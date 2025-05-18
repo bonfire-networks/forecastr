@@ -59,6 +59,7 @@ defmodule Forecastr do
     else
       {:ok, _response} = response -> response
       {:error, _} = error -> error
+      other -> {:error, other}
     end
   end
 
@@ -70,9 +71,8 @@ defmodule Forecastr do
   end
 
   defp fetch_from_backend(when_to_forecast, query, params) do
-    backend = Application.get_env(:forecastr, :backend)
-
-    with {:ok, weather} <- backend.weather(when_to_forecast, query, params),
+    with backend when is_atom(backend) and not is_nil(backend) <- Application.get_env(:forecastr, :backend),
+    {:ok, weather} <- backend.weather(when_to_forecast, query, params),
          {:ok, normalized_weather} <- backend.normalize(weather) do
       {:ok, normalized_weather}
     end
