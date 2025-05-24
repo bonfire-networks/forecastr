@@ -351,7 +351,9 @@ defmodule Forecastr.Renderer.ASCII do
     """
   end
 
-  @unicode_range ~r/[\x{2600}-\x{9FFF}]/u
+  # Regex pattern defined as a function to comply with Erlang/OTP 28
+  defp unicode_range, do: ~r/[\x{2600}-\x{9FFF}]/u
+  
   defp concat_ascii_with_weather_info(ascii_art_list, ascii_list, weather_info) do
     blank_space = 1
 
@@ -364,7 +366,7 @@ defmodule Forecastr.Renderer.ASCII do
     Enum.map(Stream.zip([ascii_art_subset, weather_info, ascii_subset]), fn {ascii_art, weather,
                                                                              ascii} ->
       unicode_count =
-        @unicode_range
+        unicode_range()
         |> Regex.scan(ascii)
         |> List.flatten()
         |> Enum.count()
