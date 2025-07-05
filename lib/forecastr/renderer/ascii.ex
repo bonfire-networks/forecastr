@@ -39,21 +39,55 @@ defmodule Forecastr.Renderer.ASCII do
           "temp_max" => temp_max,
           "temp_min" => temp_min,
           "id" => weather_id,
+          "description" => main_weather_condition,
+          "icon" => icon
+        },
+        output_type,
+        units
+      ) do
+    bare_ascii =
+      icon
+      |> ascii_for(:ascii)
+      |> String.split("\n")
+
+    forecast =
+      icon
+      |> ascii_for(output_type)
+      |> String.split("\n")
+      |> append_reset_colours(output_type)
+      |> append_weather_info(bare_ascii, main_weather_condition, temp, temp_max, temp_min, units)
+
+    [
+      ~s(Weather report: #{name}, #{country}\n),
+      ~s(lat: #{lat}, lon: #{lon}\n),
+      "\n",
+      table([forecast], output_type)
+    ]
+  end
+
+  # Fallback for weather data without icon field (backward compatibility)
+  def render(
+        %{
+          "name" => name,
+          "country" => country,
+          "coordinates" => %{"lat" => lat, "lon" => lon},
+          "temp" => temp,
+          "temp_max" => temp_max,
+          "temp_min" => temp_min,
+          "id" => weather_id,
           "description" => main_weather_condition
         },
         output_type,
         units
       ) do
-    weather_codes = get_weather_codes_for_backend(Application.get_env(:forecastr, :backend))
-    weather_code = Map.get(weather_codes, weather_id, :codeunknown)
-
+    # Fallback to unknown weather icon for legacy data without icon field
     bare_ascii =
-      weather_code
+      weather_id
       |> ascii_for(:ascii)
       |> String.split("\n")
 
     forecast =
-      weather_code
+      weather_id
       |> ascii_for(output_type)
       |> String.split("\n")
       |> append_reset_colours(output_type)
@@ -146,7 +180,258 @@ defmodule Forecastr.Renderer.ASCII do
     |> Enum.join("\n")
   end
 
-  @spec ascii_for(atom(), atom()) :: String.t()
+  @spec ascii_for(String.t() | atom(), atom()) :: String.t()
+  # Handle standard weather icons (strings)
+  def ascii_for(icon, output_type) when icon in ["clear-day", "clear-night"] do
+    """
+    #{bright_yellow(output_type)}  \\   /
+    #{bright_yellow(output_type)}   .-.
+    #{bright_yellow(output_type)}‒ (   ) ‒
+    #{bright_yellow(output_type)}   `-᾿
+    #{bright_yellow(output_type)}  /   \\
+    """
+  end
+
+  def ascii_for(icon, output_type) when icon in ["partly-cloudy-day", "partly-cloudy-night"] do
+    """
+    #{yellow(output_type)}  \\  /
+    #{yellow(output_type)}_ /\"\"#{reset(output_type)}#{white(output_type)}.-.
+    #{yellow(output_type)}  \\#{reset(output_type)}#{white(output_type)}_(   ).
+    #{yellow(output_type)}  /#{reset(output_type)}#{white(output_type)}(___(__)
+    """
+  end
+
+  def ascii_for("cloudy", output_type) do
+    """
+    #{light_white(output_type)}    .--.
+    #{light_white(output_type)} .-(    ).
+    #{light_white(output_type)}(___.__)__)
+    #{normal(output_type)}
+    """
+  end
+
+  def ascii_for("overcast", output_type) do
+    """
+    #{white(output_type)}   .--.
+    #{white(output_type)}.-(    ).
+    #{white(output_type)}(___.__)__)
+    #{normal(output_type)}
+    """
+  end
+
+  def ascii_for(icon, output_type) when icon in ["fog", "fog-day", "fog-night"] do
+    """
+    #{light_white(output_type)}_ - _ - _ -
+    #{light_white(output_type)}_ - _ - _
+    #{light_white(output_type)}_ - _ - _ -
+    #{light_white(output_type)}
+    """
+  end
+
+  def ascii_for("extreme-fog", output_type) do
+    """
+    #{white(output_type)}▓▓▓▓▓▓▓▓▓
+    #{white(output_type)}▓▓▓▓▓▓▓▓
+    #{white(output_type)}▓▓▓▓▓▓▓▓▓
+    #{white(output_type)}
+    """
+  end
+
+  def ascii_for("mist", output_type) do
+    """
+    #{light_white(output_type)}_ _ _ _ _ _
+    #{light_white(output_type)} _ _ _ _ _
+    #{light_white(output_type)}_ _ _ _ _ _
+    #{light_white(output_type)}
+    """
+  end
+
+  def ascii_for(icon, output_type) when icon in ["haze-day", "haze-night"] do
+    """
+    #{light_white(output_type)}. . . . . .
+    #{light_white(output_type)} . . . . .
+    #{light_white(output_type)}. . . . . .
+    #{light_white(output_type)}
+    """
+  end
+
+  def ascii_for(icon, output_type) when icon in ["dust-day", "dust-night"] do
+    """
+    #{yellow(output_type)}≈ ≈ ≈ ≈ ≈ ≈
+    #{yellow(output_type)} ≈ ≈ ≈ ≈ ≈
+    #{yellow(output_type)}≈ ≈ ≈ ≈ ≈ ≈
+    #{yellow(output_type)}
+    """
+  end
+
+  def ascii_for(icon, output_type) when icon in ["overcast-day-smoke", "overcast-night-smoke"] do
+    """
+    #{white(output_type)}   .--.
+    #{white(output_type)}.-(    ).
+    #{white(output_type)}(___.__)__)
+    #{light_white(output_type)}∼ ∼ ∼ ∼ ∼
+    """
+  end
+
+  def ascii_for(icon, output_type) when icon in ["extreme-day-smoke", "extreme-night-smoke"] do
+    """
+    #{red(output_type)}   .--.
+    #{red(output_type)}.-(    ).
+    #{red(output_type)}(___.__)__)
+    #{light_white(output_type)}∼∼ ∼∼ ∼∼
+    """
+  end
+
+  def ascii_for("wind-alert", output_type) do
+    """
+    #{bright_yellow(output_type)}  ⚠
+    #{white(output_type)}∼∼∼∼∼∼∼
+    #{white(output_type)}∼∼∼∼∼∼
+    #{white(output_type)}∼∼∼∼∼∼∼
+    """
+  end
+
+  def ascii_for("tornado", output_type) do
+    """
+    #{white(output_type)}  .--.
+    #{white(output_type)}.-(  ).
+    #{white(output_type)} \\  /
+    #{white(output_type)}  \\/
+    #{white(output_type)}  /\\
+    """
+  end
+
+  def ascii_for(icon, output_type)
+      when icon in [
+             "drizzle",
+             "overcast-drizzle",
+             "extreme-drizzle",
+             "extreme-drizzle-fill",
+             "rain"
+           ] do
+    """
+    #{white(output_type)}   .-.
+    #{white(output_type)}  (   ).
+    #{white(output_type)}(___(__)
+    #{blue(output_type)}  ʻ ʻ ʻ ʻ
+    #{blue(output_type)}ʻ ʻ ʻ ʻ
+    """
+  end
+
+  def ascii_for(icon, output_type)
+      when icon in ["rain-fill", "partly-cloudy-day-rain", "partly-cloudy-night-rain"] do
+    """
+    #{yellow(output_type)}_`/\"\"#{reset(output_type)}#{white(output_type)}.-.
+    #{yellow(output_type)} ,\\_#{reset(output_type)}(#{white(output_type)}   ).
+    #{yellow(output_type)}  /#{reset(output_type)}#{white(output_type)}(___(__)
+    #{blue(output_type)}   ʻ ʻ ʻ ʻ
+    #{blue(output_type)}   ʻ ʻ ʻ ʻ
+    """
+  end
+
+  def ascii_for(icon, output_type) when icon in ["extreme-rain", "extreme-rain-fill"] do
+    """
+    #{light_white(output_type)}     .-.
+    #{light_white(output_type)}    (   ).
+    #{light_white(output_type)}  (___(__)
+    #{blue(output_type)}‚ʻ‚ʻ‚ʻ‚ʻ
+    #{blue(output_type)}‚ʻ‚ʻ‚ʻ‚ʻ
+    """
+  end
+
+  def ascii_for("overcast-rain", output_type) do
+    """
+    #{yellow(output_type)}_`/\"\"#{reset(output_type)}#{light_white(output_type)}.-.
+    #{yellow(output_type)} ,\\#{reset(output_type)}#{light_white(output_type)}_(   ).
+    #{yellow(output_type)} /#{reset(output_type)}#{light_white(output_type)}\(___(__)
+    #{blue(output_type)}   ‚ʻ‚ʻ‚ʻ‚ʻ
+    #{blue(output_type)}   ‚ʻ‚ʻ‚ʻ‚ʻ
+    """
+  end
+
+  def ascii_for(icon, output_type) when icon in ["snow", "snow-fill", "snowflake"] do
+    """
+    #{white(output_type)}   .-.
+    #{white(output_type)}  (   ).
+    #{white(output_type)}(___(__)
+    #{light_white(output_type)}  *  *  *
+    #{light_white(output_type)}*  *  *
+    """
+  end
+
+  def ascii_for("extreme-snow", output_type) do
+    """
+    #{white(output_type)}   .-.
+    #{white(output_type)}  (   ).
+    #{white(output_type)}  (___(__)
+    #{light_white(output_type)}  * * * *
+    #{light_white(output_type)}* * * *
+    """
+  end
+
+  def ascii_for(icon, output_type)
+      when icon in ["partly-cloudy-day-snow", "partly-cloudy-night-snow"] do
+    """
+    #{yellow(output_type)}_`/\"\"#{reset(output_type)}#{white(output_type)}.-.
+    #{yellow(output_type)} ,\\_#{reset(output_type)}#{white(output_type)}\(   ).
+    #{yellow(output_type)} /#{reset(output_type)}#{white(output_type)}(___(__)
+    #{light_white(output_type)}   *  *  *
+    #{light_white(output_type)}   *  *  *
+    """
+  end
+
+  def ascii_for("overcast-snow", output_type) do
+    """
+    #{yellow(output_type)}_`/\"\"#{reset(output_type)}#{white(output_type)}.-.
+    #{yellow(output_type)} ,\\_#{reset(output_type)}#{white(output_type)}(   ).
+    #{yellow(output_type)}  /#{reset(output_type)}#{white(output_type)}(___(__)
+    #{light_white(output_type)}      * * * *
+    #{light_white(output_type)}    * * * *
+    """
+  end
+
+  def ascii_for(icon, output_type) when icon in ["sleet", "sleet-fill"] do
+    """
+    #{white(output_type)}  .-.
+    #{white(output_type)} (   ).
+    #{white(output_type)}(___(__)
+    #{blue(output_type)} ʻ#{reset(output_type)}#{light_white(output_type)} *#{reset(output_type)} ʻ #{light_white(output_type)}*
+    #{light_white(output_type)}*#{reset(output_type)}#{blue(output_type)} ʻ#{reset(output_type)} *#{blue(output_type)} ʻ
+    """
+  end
+
+  def ascii_for(icon, output_type)
+      when icon in ["thunderstorms", "thunderstorms-night", "thunderstorms-overcast"] do
+    """
+    #{yellow(output_type)}_`/\"\"#{reset(output_type)}#{white(output_type)}.-.
+    #{yellow(output_type)} ,\\#{reset(output_type)}#{white(output_type)}_(   ).
+    #{yellow(output_type)} /#{reset(output_type)}#{white(output_type)}(___(__)
+    #{bright_yellow(output_type)}  ⚡#{reset(output_type)}#{blue(output_type)}ʻ ʻ#{reset(output_type)}#{bright_yellow(output_type)}⚡ʻ
+    #{blue(output_type)} ʻ ʻ ʻ ʻ
+    """
+  end
+
+  def ascii_for("thunderstorms-extreme", output_type) do
+    """
+    #{white(output_type)}    .-.
+    #{white(output_type)}   (   ).
+    #{white(output_type)}  (___(__)
+    #{blue(output_type)}‚ʻ#{reset(output_type)}#{bright_yellow(output_type)}⚡#{reset(output_type)}#{blue(output_type)}ʻ‚#{reset(output_type)}#{bright_yellow(output_type)}⚡#{reset(output_type)}#{blue(output_type)}‚ʻ
+    #{blue(output_type)}‚ʻ‚ʻ#{reset(output_type)}#{bright_yellow(output_type)}⚡#{reset(output_type)}#{blue(output_type)}ʻ‚ʻ
+    """
+  end
+
+  def ascii_for(icon, output_type) when icon in ["not-available"] or is_binary(icon) do
+    """
+    #{light_white(output_type)}.-.
+    #{light_white(output_type)}__)
+    #{light_white(output_type)}(
+    #{light_white(output_type)}`-᾿
+    #{light_white(output_type)}  •
+    """
+  end
+
+  # Handle legacy ASCII codes (atoms) for backward compatibility only
   def ascii_for(:codeunknown, output_type) do
     """
     #{light_white(output_type)}.-.
@@ -157,203 +442,9 @@ defmodule Forecastr.Renderer.ASCII do
     """
   end
 
-  def ascii_for(:codecloudy, output_type) do
-    """
-    #{light_white(output_type)}    .--.
-    #{light_white(output_type)} .-(    ).
-    #{light_white(output_type)}(___.__)__)
-    #{normal(output_type)}
-    """
-  end
-
-  def ascii_for(:codefog, output_type) do
-    """
-    #{light_white(output_type)}_ - _ - _ -
-    #{light_white(output_type)}_ - _ - _
-    #{light_white(output_type)}_ - _ - _ -
-    #{light_white(output_type)}
-    """
-  end
-
-  def ascii_for(:codeheavyrain, output_type) do
-    """
-    #{light_white(output_type)}     .-.
-    #{light_white(output_type)}    (   ).
-    #{light_white(output_type)}  (___(__)
-    #{blue(output_type)}‚ʻ‚ʻ‚ʻ‚ʻ
-    #{blue(output_type)}‚ʻ‚ʻ‚ʻ‚ʻ
-    """
-  end
-
-  def ascii_for(:codeheavyshowers, output_type) do
-    """
-    #{yellow(output_type)}_`/\"\"#{reset(output_type)}#{light_white(output_type)}.-.
-    #{yellow(output_type)} ,\\#{reset(output_type)}#{light_white(output_type)}_(   ).
-    #{yellow(output_type)} /#{reset(output_type)}#{light_white(output_type)}\(___(__)
-    #{blue(output_type)}   ‚ʻ‚ʻ‚ʻ‚ʻ
-    #{blue(output_type)}   ‚ʻ‚ʻ‚ʻ‚ʻ
-    """
-  end
-
-  def ascii_for(:codeheavysnow, output_type) do
-    """
-    #{white(output_type)}   .-.
-    #{white(output_type)}  (   ).
-    #{white(output_type)}  (___(__)
-    #{light_white(output_type)}  * * * *
-    #{light_white(output_type)}* * * *
-    """
-  end
-
-  def ascii_for(:codeheavysnowshowers, output_type) do
-    """
-    #{yellow(output_type)}_`/\"\"#{reset(output_type)}#{white(output_type)}.-.
-    #{yellow(output_type)} ,\\_#{reset(output_type)}#{white(output_type)}(   ).
-    #{yellow(output_type)}  /#{reset(output_type)}#{white(output_type)}(___(__)
-    #{light_white(output_type)}      * * * *
-    #{light_white(output_type)}    * * * *
-    """
-  end
-
-  def ascii_for(:codelightrain, output_type) do
-    """
-    #{white(output_type)}   .-.
-    #{white(output_type)}  (   ).
-    #{white(output_type)}(___(__)
-    #{blue(output_type)}  ʻ ʻ ʻ ʻ
-    #{blue(output_type)}ʻ ʻ ʻ ʻ
-    """
-  end
-
-  def ascii_for(:codelightshowers, output_type) do
-    """
-    #{yellow(output_type)}_`/\"\"#{reset(output_type)}#{white(output_type)}.-.
-    #{yellow(output_type)} ,\\_#{reset(output_type)}(#{white(output_type)}   ).
-    #{yellow(output_type)}  /#{reset(output_type)}#{white(output_type)}(___(__)
-    #{blue(output_type)}   ʻ ʻ ʻ ʻ
-    #{blue(output_type)}   ʻ ʻ ʻ ʻ
-    """
-  end
-
-  def ascii_for(:codelightsleet, output_type) do
-    """
-    #{white(output_type)}  .-.
-    #{white(output_type)} (   ).
-    #{white(output_type)}(___(__)
-    #{blue(output_type)} ʻ#{reset(output_type)}#{light_white(output_type)} *#{reset(output_type)} ʻ #{
-      light_white(output_type)
-    }*
-    #{light_white(output_type)}*#{reset(output_type)}#{blue(output_type)} ʻ#{reset(output_type)} *#{
-      blue(output_type)
-    } ʻ
-    """
-  end
-
-  def ascii_for(:codelightsleetshowers, output_type) do
-    """
-    #{yellow(output_type)}_`/\"\"#{white(output_type)}.-.
-    #{yellow(output_type)} ,\\_#{white(output_type)}\(   ).
-    #{yellow(output_type)}  /#{reset(output_type)}#{white(output_type)}(___(__)
-    #{blue(output_type)}   ʻ#{reset(output_type)}#{white(output_type)} *#{blue(output_type)} ʻ#{
-      reset(output_type)
-    }#{white(output_type)} *
-    #{white(output_type)}  *#{reset(output_type)}#{blue(output_type)} ʻ#{reset(output_type)}#{
-      white(output_type)
-    } *#{reset(output_type)}#{blue(output_type)} ʻ
-    """
-  end
-
-  def ascii_for(:codelightsnow, output_type) do
-    """
-    #{white(output_type)}   .-.
-    #{white(output_type)}  (   ).
-    #{white(output_type)}(___(__)
-    #{light_white(output_type)}  *  *  *
-    #{light_white(output_type)}*  *  *
-    """
-  end
-
-  def ascii_for(:codelightsnowshowers, output_type) do
-    """
-    #{yellow(output_type)}_`/\"\"#{reset(output_type)}#{white(output_type)}.-.
-    #{yellow(output_type)} ,\\_#{reset(output_type)}#{white(output_type)}\(   ).
-    #{yellow(output_type)} /#{reset(output_type)}#{white(output_type)}(___(__)
-    #{light_white(output_type)}   *  *  *
-    #{light_white(output_type)}   *  *  *
-    """
-  end
-
-  def ascii_for(:codepartlycloudy, output_type) do
-    """
-    #{yellow(output_type)}  \\  /
-    #{yellow(output_type)}_ /\"\"#{reset(output_type)}#{white(output_type)}.-.
-    #{yellow(output_type)}  \\#{reset(output_type)}#{white(output_type)}_(   ).
-    #{yellow(output_type)}  /#{reset(output_type)}#{white(output_type)}(___(__)
-    """
-  end
-
-  def ascii_for(:codesunny, output_type) do
-    """
-    #{bright_yellow(output_type)}  \\   /
-    #{bright_yellow(output_type)}   .-.
-    #{bright_yellow(output_type)}‒ (   ) ‒
-    #{bright_yellow(output_type)}   `-᾿
-    #{bright_yellow(output_type)}  /   \\
-    """
-  end
-
-  def ascii_for(:codethunderyheavyrain, output_type) do
-    """
-    #{white(output_type)}    .-.
-    #{white(output_type)}   (   ).
-    #{white(output_type)}  (___(__)
-    #{blue(output_type)}‚ʻ#{reset(output_type)}#{bright_yellow(output_type)}⚡#{reset(output_type)}#{
-      blue(output_type)
-    }ʻ‚#{reset(output_type)}#{bright_yellow(output_type)}⚡#{reset(output_type)}#{
-      blue(output_type)
-    }‚ʻ
-    #{blue(output_type)}‚ʻ‚ʻ#{reset(output_type)}#{bright_yellow(output_type)}⚡#{
-      reset(output_type)
-    }#{blue(output_type)}ʻ‚ʻ
-    """
-  end
-
-  def ascii_for(:codethunderyshowers, output_type) do
-    """
-    #{yellow(output_type)}_`/\"\"#{reset(output_type)}#{white(output_type)}.-.
-    #{yellow(output_type)} ,\\#{reset(output_type)}#{white(output_type)}_(   ).
-    #{yellow(output_type)} /#{reset(output_type)}#{white(output_type)}(___(__)
-    #{bright_yellow(output_type)}  ⚡#{reset(output_type)}#{blue(output_type)}ʻ ʻ#{
-      reset(output_type)
-    }#{bright_yellow(output_type)}⚡ʻ
-    #{blue(output_type)} ʻ ʻ ʻ ʻ
-    """
-  end
-
-  def ascii_for(:codethunderysnowshowers, output_type) do
-    """
-    #{yellow(output_type)}_`/\"\"#{reset(output_type)}.-.
-    #{yellow(output_type)} ,\\#{reset(output_type)}_(   ).
-    #{yellow(output_type)} /#{reset(output_type)}(___(__)
-    #{light_white(output_type)}   *#{reset(output_type)}#{bright_yellow(output_type)}⚡#{
-      reset(output_type)
-    }#{light_white(output_type)} *#{reset(output_type)}#{bright_yellow(output_type)}⚡
-    #{light_white(output_type)}   *  *  *
-    """
-  end
-
-  def ascii_for(:codeverycloudy, output_type) do
-    """
-    #{white(output_type)}   .--.
-    #{white(output_type)}.-(    ).
-    #{white(output_type)}(___.__)__)
-    #{normal(output_type)}
-    """
-  end
-
   # Regex pattern defined as a function to comply with Erlang/OTP 28
   defp unicode_range, do: ~r/[\x{2600}-\x{9FFF}]/u
-  
+
   defp concat_ascii_with_weather_info(ascii_art_list, ascii_list, weather_info) do
     blank_space = 1
 
@@ -399,20 +490,25 @@ defmodule Forecastr.Renderer.ASCII do
                                 "temp_min" => temp_min,
                                 "description" => main_weather_condition,
                                 "id" => weather_id
-                              },
+                              } = forecast_item,
                               acc ->
-          weather_codes = get_weather_codes_for_backend(Application.get_env(:forecastr, :backend))
-          weather_code = Map.get(weather_codes, weather_id, :codeunknown)
+          # Use icon field if available, otherwise fall back to unknown
+          icon_or_code =
+            case Map.get(forecast_item, "icon") do
+              nil -> :codeunknown
+              icon -> icon
+            end
+
           time = extract_time(date_time)
           period_of_the_day = Map.get(@relevant_times, time)
 
           bare_ascii =
-            weather_code
+            icon_or_code
             |> ascii_for(:ascii)
             |> String.split("\n")
 
           ascii =
-            weather_code
+            icon_or_code
             |> ascii_for(output_type)
             |> String.split("\n")
             |> append_reset_colours(output_type)
@@ -462,109 +558,6 @@ defmodule Forecastr.Renderer.ASCII do
   def table(data, :ansi), do: Elbat.table(data, :unicode)
   def table(data, :html), do: Elbat.table(data, :unicode)
   def table(data, _), do: data
-
-  def get_weather_codes_for_backend(_) do
-    %{
-      200 => :codethunderyshowers,
-      201 => :codethunderyshowers,
-      210 => :codethunderyshowers,
-      230 => :codethunderyshowers,
-      231 => :codethunderyshowers,
-      202 => :codethunderyheavyrain,
-      211 => :codethunderyheavyrain,
-      212 => :codethunderyheavyrain,
-      221 => :codethunderyheavyrain,
-      232 => :codethunderyheavyrain,
-      300 => :codelightrain,
-      301 => :codelightrain,
-      310 => :codelightrain,
-      311 => :codelightrain,
-      313 => :codelightrain,
-      321 => :codelightrain,
-      302 => :codeheavyrain,
-      312 => :codeheavyrain,
-      314 => :codeheavyrain,
-      500 => :codelightshowers,
-      501 => :codelightshowers,
-      502 => :codeheavyshowers,
-      503 => :codeheavyshowers,
-      504 => :codeheavyshowers,
-      511 => :codelightsleet,
-      520 => :codelightshowers,
-      521 => :codelightshowers,
-      522 => :codeheavyshowers,
-      531 => :codeheavyshowers,
-      600 => :codelightsnow,
-      601 => :codelightsnow,
-      602 => :codeheavysnow,
-      611 => :codelightsleet,
-      612 => :codelightsleetshowers,
-      615 => :codelightsleet,
-      616 => :codelightsleet,
-      620 => :codelightsnowshowers,
-      621 => :codelightsnowshowers,
-      622 => :codeheavysnowshowers,
-      701 => :codefog,
-      711 => :codefog,
-      721 => :codefog,
-      741 => :codefog,
-      # sand, dust whirls
-      731 => :codeunknown,
-      # sand
-      751 => :codeunknown,
-      # dust
-      761 => :codeunknown,
-      # volcanic ash
-      762 => :codeunknown,
-      # squalls
-      771 => :codeunknown,
-      # tornado
-      781 => :codeunknown,
-      800 => :codesunny,
-      801 => :codepartlycloudy,
-      802 => :codecloudy,
-      803 => :codeverycloudy,
-      804 => :codeverycloudy,
-      # tornado
-      900 => :codeunknown,
-      # tropical storm
-      901 => :codeunknown,
-      # hurricane
-      902 => :codeunknown,
-      # cold
-      903 => :codeunknown,
-      # hot
-      904 => :codeunknown,
-      # windy
-      905 => :codeunknown,
-      # hail
-      906 => :codeunknown,
-      # calm
-      951 => :codeunknown,
-      # light breeze
-      952 => :codeunknown,
-      # gentle breeze
-      953 => :codeunknown,
-      # moderate breeze
-      954 => :codeunknown,
-      # fresh breeze
-      955 => :codeunknown,
-      # strong breeze
-      956 => :codeunknown,
-      # high wind, near gale
-      957 => :codeunknown,
-      # gale
-      958 => :codeunknown,
-      # severe gale
-      959 => :codeunknown,
-      # storm
-      960 => :codeunknown,
-      # violent storm
-      961 => :codeunknown,
-      # hurricane
-      962 => :codeunknown
-    }
-  end
 
   defp determine_unit(:metric), do: "°C"
   defp determine_unit(:imperial), do: "°F"

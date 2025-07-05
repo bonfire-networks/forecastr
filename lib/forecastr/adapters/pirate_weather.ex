@@ -100,8 +100,15 @@ defmodule Forecastr.PirateWeather do
 
   defp extract_main_weather(weather) do
     %{"summary" => main_weather_condition, "icon" => icon_name} = weather
-    %{"description" => main_weather_condition, "id" => icon_name}
+    standard_icon = pirate_weather_icon_to_standard(icon_name)
+    %{"description" => main_weather_condition, "id" => icon_name, "icon" => standard_icon}
   end
+
+  # Map PirateWeather icons to standardized weather icons
+  defp pirate_weather_icon_to_standard("wind"), do: "wind-alert"
+  defp pirate_weather_icon_to_standard("cloudy"), do: "overcast"
+  defp pirate_weather_icon_to_standard("hail"), do: "extreme-hail"
+  defp pirate_weather_icon_to_standard(icon), do: icon
 
   defp normalize_forecast_list(%{
          "summary" => main_weather_condition,
@@ -109,17 +116,19 @@ defmodule Forecastr.PirateWeather do
          "temperature" => temp = temp_max = temp_min,
          "time" => time
        }) do
+    standard_icon = pirate_weather_icon_to_standard(icon)
     date = time |> DateTime.from_unix!() |> DateTime.to_date() |> to_string()
-    time = time |> DateTime.from_unix!() |> DateTime.to_time() |> to_string()
+    time_str = time |> DateTime.from_unix!() |> DateTime.to_time() |> to_string()
 
     Map.new()
     |> add("temp", temp)
     |> add("temp_max", temp_max)
     |> add("temp_min", temp_min)
-    |> add("dt_txt", "#{date} #{time}")
+    |> add("dt_txt", "#{date} #{time_str}")
     |> add("dt", time)
     |> add("description", main_weather_condition)
     |> add("id", icon)
+    |> add("icon", standard_icon)
   end
 
   defp add(map, key, value) do
@@ -139,8 +148,9 @@ defmodule Forecastr.PirateWeather do
   end
 
   defp convert_params(%{units: :imperial} = params), do: Map.put(params, :units, "us")
+  defp convert_params(%{units: :metric} = params), do: Map.put(params, :units, "si")
   defp convert_params(%{units: _} = params), do: Map.put(params, :units, "si")
-  defp convert_params(%{} = params), do: params
+  defp convert_params(%{} = params), do: Map.put(params, :units, "si")
   defp convert_params(params) when is_list(params), do: Map.new(params) |> convert_params()
 
   defp pick_location(%{"address" => %{"city" => _city}} = body), do: body

@@ -85,6 +85,20 @@ defmodule Forecastr.Renderer.Colours do
     [~S(<span style="color: blue">)]
   end
 
+  def red(:ascii), do: ""
+
+  def red(:ansi) do
+    [ANSI.red()]
+  end
+
+  def red(:png) do
+    [~S(<span foreground="red">)]
+  end
+
+  def red(:html) do
+    [~S(<span style="color: red">)]
+  end
+
   def normal(:ascii), do: ""
 
   def normal(:ansi) do
