@@ -216,8 +216,13 @@ defmodule Forecastr.OpenMeteo do
     |> Map.delete(:units)
   end
 
-  defp convert_params(%{units: _} = params), do: Map.delete(params, :units)
+  defp convert_params(%{units: _} = params), do: Map.delete(params, :units) |> convert_params()
   defp convert_params(%{} = params), do: params
+  # default units
+    |> Map.put(:temperature_unit, "celsius")
+    |> Map.put(:wind_speed_unit, "kmh")
+    |> Map.put(:precipitation_unit, "mm")
+
   defp convert_params(params) when is_list(params), do: Map.new(params) |> convert_params()
 
   defp pick_location(%{"address" => %{"city" => _city}} = body), do: body

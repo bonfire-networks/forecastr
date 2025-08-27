@@ -45,16 +45,17 @@ defmodule Forecastr do
     location = String.downcase(query)
     renderer = Keyword.get(params, :renderer, Forecastr.Renderer.ASCII)
     units = Keyword.get(params, :units, :metric)
+    cache_key = {location, units}
 
-    with {:ok, response} <- perform_query(location, when_to_forecast, params) do
+    with {:ok, response} <- perform_query(cache_key, when_to_forecast, params) do
       {:ok, renderer.render(response, units)}
     end
   end
 
-  defp perform_query(query, when_to_forecast, params) do
-    with {:ok, :miss} <- fetch_from_cache(when_to_forecast, query),
-         {:ok, response} <- fetch_from_backend(when_to_forecast, query, params),
-         :ok <- Forecastr.Cache.set(when_to_forecast, query, response) do
+  defp perform_query(cache_key, when_to_forecast, params) do
+    with {:ok, :miss} <- fetch_from_cache(when_to_forecast, cache_key),
+        {:ok, response} <- fetch_from_backend(when_to_forecast, elem(cache_key, 0), params),
+        :ok <- Forecastr.Cache.set(when_to_forecast, cache_key, response) do
       {:ok, response}
     else
       {:ok, _response} = response -> response
