@@ -23,8 +23,17 @@ defmodule Forecastr.Geocoder do
     HTTPoison.get!(@endpoint <> path, [], params: params)
   end
 
-  defp put_location(%{"display_name" => location} = body),
-    do: put_in(body, ["address", "city"], location)
+  defp put_location(%{"address" => address} = body) when is_map(address) do
+    city =
+      address["city"] || address["town"] || address["village"] ||
+        address["suburb"] || address["province"]
+
+    if city do
+      put_in(body, ["address", "city"], city)
+    else
+      body
+    end
+  end
 
   defp put_location(body), do: body
 end

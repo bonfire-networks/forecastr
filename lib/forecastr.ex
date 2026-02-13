@@ -73,7 +73,8 @@ defmodule Forecastr do
 
   defp fetch_from_backend(when_to_forecast, query, params) do
     with backend when is_atom(backend) and not is_nil(backend) <-
-           Application.get_env(:forecastr, :backend, Forecastr.OpenMeteo),
+           Keyword.get(params, :backend) ||
+             Application.get_env(:forecastr, :backend, Forecastr.OpenMeteo),
          {:ok, weather} <- backend.weather(when_to_forecast, query, params),
          {:ok, normalized_weather} <- backend.normalize(weather) do
       {:ok, normalized_weather}

@@ -6,7 +6,7 @@ defmodule Forecastr.PirateWeather do
   @type when_to_forecast :: :today | :next_days
   @spec weather(when_to_forecast, String.t(), map()) :: {:ok, map()} | {:error, atom()}
   def weather(when_to_forecast, query, opts) do
-    with {:ok, endpoint} <- api_endpoint(when_to_forecast),
+    with {:ok, endpoint} <- api_endpoint(opts),
          %{
            "lat" => lat,
            "lon" => lon,
@@ -56,6 +56,11 @@ defmodule Forecastr.PirateWeather do
       |> add("temp", temp)
       |> add("temp_max", temp_max)
       |> add("temp_min", temp_min)
+      |> maybe_add("wind_speed", weather["windSpeed"])
+      |> maybe_add("wind_bearing", weather["windBearing"])
+      |> maybe_add("humidity", weather["humidity"])
+      |> maybe_add("uv_index", weather["uvIndex"])
+      |> maybe_add("apparent_temp", weather["apparentTemperature"])
 
     {:ok, normalized}
   end
@@ -136,9 +141,14 @@ defmodule Forecastr.PirateWeather do
     |> Map.put(key, value)
   end
 
-  @spec api_endpoint(when_to_forecast) :: String.t()
-  def api_endpoint(_) do
-    case Application.get_env(:forecastr, :appid) do
+  defp maybe_add(map, _key, nil), do: map
+  defp maybe_add(map, key, value), do: Map.put(map, key, value)
+
+  @spec api_endpoint(when_to_forecast | map()) :: {:ok, String.t()} | {:error, String.t()}
+  def api_endpoint(opts) do
+    appid = opts[:appid] || Application.get_env(:forecastr, :appid)
+
+    case appid do
       appid when is_binary(appid) and appid != "" ->
         {:ok, "https://api.pirateweather.net/forecast/#{appid}"}
 

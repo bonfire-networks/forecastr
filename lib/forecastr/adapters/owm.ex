@@ -39,8 +39,8 @@ defmodule Forecastr.OWM do
         "sys" => %{"country" => country},
         "coord" => %{"lat" => lat, "lon" => lon},
         "weather" => weather,
-        "main" => %{"temp" => temp, "temp_max" => temp_max, "temp_min" => temp_min}
-      }) do
+        "main" => %{"temp" => temp, "temp_max" => temp_max, "temp_min" => temp_min} = main
+      } = data) do
     normalized =
       weather
       |> extract_main_weather()
@@ -50,6 +50,10 @@ defmodule Forecastr.OWM do
       |> add("temp", temp)
       |> add("temp_max", temp_max)
       |> add("temp_min", temp_min)
+      |> maybe_add("wind_speed", get_in(data, ["wind", "speed"]))
+      |> maybe_add("wind_bearing", get_in(data, ["wind", "deg"]))
+      |> maybe_add("humidity", main["humidity"])
+      |> maybe_add("apparent_temp", main["feels_like"])
 
     {:ok, normalized}
   end
@@ -74,13 +78,16 @@ defmodule Forecastr.OWM do
   end
 
   defp fetch_weather_information(endpoint, opts) do
+    appid = opts[:appid] || Application.get_env(:forecastr, :appid)
+
     params =
       opts
       |> Keyword.take([:units])
       |> Enum.into(%{})
       |> Map.put_new(:units, :metric)
+      |> Map.put(:APPID, appid)
 
-    case Forecastr.OWM.HTTP.get(endpoint, [], params: params) do
+    case HTTPoison.get("https://" <> endpoint, [], params: params) do
       {:ok, %HTTPoison.Response{status_code: 200, body: body}} ->
         {:ok, Jason.decode!(body)}
 
@@ -255,6 +262,9 @@ defmodule Forecastr.OWM do
     map
     |> Map.put(key, value)
   end
+
+  defp maybe_add(map, _key, nil), do: map
+  defp maybe_add(map, key, value), do: Map.put(map, key, value)
 
   @spec owm_api_endpoint(when_to_forecast) :: String.t()
   def owm_api_endpoint(:today), do: "api.openweathermap.org/data/2.5/weather"
